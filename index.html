@@ -15,13 +15,14 @@
     
     <script>
         function authTwitch() {
-            const clientId = 'lcbtjkblttbh70ubk0h1zrz9f2ka8i'; // ЗАМЕНИТЕ НА ВАШ CLIENT_ID
-            const redirectUri = 'https://eendychan.github.io/twitch-bot-auth/callback.html';
+            // Client ID теперь будет через environment variable
+            const clientId = "%%TWITCH_CLIENT_ID%%";
+            const redirectUri = window.location.origin + '/callback.html';
             const scopes = [
                 'channel:read:redemptions',
-                'channel:manage:redemptions',
+                'channel:manage:redemptions', 
                 'chat:read',
-                'chat:edit', 
+                'chat:edit',
                 'channel:moderate',
                 'whispers:read',
                 'whispers:edit'
