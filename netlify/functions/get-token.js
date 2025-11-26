@@ -10,3 +10,9 @@ exports.handler = async (event) => {
     body: JSON.stringify({ token: 'YOUR_SAVED_TOKEN' })
   };
 };
+
+feat: add get-token function for bot access
+
+- Create function to retrieve stored tokens
+- Setup endpoint for bot token retrieval
+- Add CORS support for API access
