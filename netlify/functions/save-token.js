@@ -1,8 +1,11 @@
+const fs = require('fs');
+const path = require('path');
+
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+    'Access-Control-Allow-Methods': 'POST, OPTIONS, GET'
   };
 
   if (event.httpMethod === 'OPTIONS') {
@@ -11,20 +14,24 @@ exports.handler = async (event) => {
 
   if (event.httpMethod === 'POST') {
     try {
-      const { token } = JSON.parse(event.body);
-      console.log('✅ Token received:', token.substring(0, 15) + '...');
+      const { token, channel } = JSON.parse(event.body);
+      
+      // Сохраняем в файл (в реальном проекте используйте базу)
+      const tokensPath = path.join(process.cwd(), 'netlify', 'functions', 'tokens.json');
+      const tokensData = JSON.parse(fs.readFileSync(tokensPath, 'utf8'));
+      
+      tokensData.tokens[channel || 'default'] = token;
+      fs.writeFileSync(tokensPath, JSON.stringify(tokensData, null, 2));
+      
+      console.log('✅ Token saved for channel:', channel);
       
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ success: true, message: 'Token saved' })
+        body: JSON.stringify({ success: true })
       };
     } catch (error) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: 'Failed to save token' })
-      };
+      return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
     }
   }
 
