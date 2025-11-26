@@ -1,43 +1,51 @@
-const fs = require('fs');
-const path = require('path');
-
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type'
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS'
   };
 
-  try {
-    // Читаем сохраненные токены из файла
-    const tokensPath = path.join(process.cwd(), 'netlify', 'functions', 'tokens.json');
-    
-    let tokensData = { tokens: {} };
-    
-    // Если файл существует - читаем его
-    if (fs.existsSync(tokensPath)) {
-      tokensData = JSON.parse(fs.readFileSync(tokensPath, 'utf8'));
-    }
-    
-    // Возвращаем последний токен или все токены
-    const tokens = Object.values(tokensData.tokens);
-    const latestToken = tokens.length > 0 ? tokens[tokens.length - 1].token : null;
-    
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ 
-        token: latestToken || 'No tokens yet',
-        all_tokens: tokensData.tokens,
-        count: Object.keys(tokensData.tokens).length
-      })
-    };
-  } catch (error) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: error.message })
-    };
+  // Для OPTIONS запроса (preflight)
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
   }
+
+  if (event.httpMethod === 'GET') {
+    try {
+      // Простая заглушка - возвращаем тестовый токен
+      // В реальном приложении здесь будет чтение из базы/файла
+      const testTokens = {
+        "test_token_1": {
+          token: "oauth:test_token_123456",
+          last_updated: new Date().toISOString(),
+          source: "netlify"
+        }
+      };
+      
+      console.log('✅ Get-token function called successfully');
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ 
+          success: true,
+          token: "oauth:test_token_123456",
+          all_tokens: testTokens,
+          count: Object.keys(testTokens).length,
+          message: "Функция работает! Добавьте логику сохранения токенов."
+        })
+      };
+    } catch (error) {
+      console.error('❌ Error in get-token:', error);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: error.message })
+      };
+    }
+  }
+
+  return { statusCode: 405, headers, body: 'Method Not Allowed' };
 };
 
 feat: add get-token function for bot access
