@@ -30,3 +30,9 @@ exports.handler = async (event) => {
 
   return { statusCode: 405, headers, body: 'Method Not Allowed' };
 };
+
+feat: add save-token function for Twitch tokens
+
+- Create serverless function to receive auth tokens
+- Add CORS headers for cross-domain requests
+- Handle POST requests with token data
