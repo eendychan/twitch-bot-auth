@@ -23,18 +23,19 @@
             document.getElementById('message').innerHTML = `
                 <div class="success">✅ Авторизация успешна!</div>
                 <p>Токен получен. Можно закрыть эту страницу.</p>
-                <p><small>Токен: ${token.substring(0, 15)}...</small></p>
+                <p><small>Токен начинается с: ${token.substring(0, 15)}...</small></p>
             `;
             
-            // Отправляем токен вашему боту (замените URL)
+            // Отправляем токен вашему боту
             fetch('https://your-bot-server.com/save-token', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({token: token})
-            }).catch(err => console.log('Бот недоступен, но токен:', token));
-            
-            // Показываем токен (на время разработки)
-            console.log('TWITCH TOKEN:', token);
+            }).then(() => {
+                console.log('Токен отправлен боту');
+            }).catch(err => {
+                console.log('Бот недоступен, но токен:', token);
+            });
             
         } else {
             document.getElementById('message').innerHTML = `
