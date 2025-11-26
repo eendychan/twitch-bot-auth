@@ -1,43 +1,46 @@
-exports.handler = async (event) => {
+exports.handler = async (event, context) => {
+  console.log('save-token function called');
+  
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS'
   };
 
+  // Handle preflight
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
   }
 
-  if (event.httpMethod === 'POST') {
-    try {
-      const { token } = JSON.parse(event.body);
-      
-      console.log('✅ Token received:', token ? token.substring(0, 15) + '...' : 'empty');
-      
-      // Просто логируем токен (в реальном приложении сохраняйте в базу)
-      console.log('📝 Full token:', token);
-      
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ 
-          success: true, 
-          message: 'Token received successfully',
-          token_preview: token ? token.substring(0, 10) + '...' : null
-        })
-      };
-    } catch (error) {
-      console.error('❌ Error in save-token:', error);
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: 'Failed to save token' })
-      };
+  try {
+    let body = {};
+    if (event.body) {
+      body = JSON.parse(event.body);
     }
+    
+    console.log('Received token:', body.token ? body.token.substring(0, 10) + '...' : 'none');
+    
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        success: true,
+        message: "Token received successfully",
+        received_token: body.token ? true : false,
+        timestamp: new Date().toISOString()
+      })
+    };
+  } catch (error) {
+    console.error('Error:', error);
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        success: false,
+        error: error.message
+      })
+    };
   }
-
-  return { statusCode: 405, headers, body: 'Method Not Allowed' };
 };
 
 feat: add save-token function for Twitch tokens
