@@ -15,8 +15,8 @@
     
     <script>
         function authTwitch() {
-            // Client ID теперь будет через environment variable
-            const clientId = "%%TWITCH_CLIENT_ID%%";
+            // Client ID будет через Netlify Environment Variable
+            const clientId = "YOUR_CLIENT_ID"; // Пока оставьте так
             const redirectUri = window.location.origin + '/callback.html';
             const scopes = [
                 'channel:read:redemptions',
