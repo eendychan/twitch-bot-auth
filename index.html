@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Twitch Bot Auth</title>
+    <style>
+        body { font-family: Arial; text-align: center; margin-top: 50px; }
+        button { padding: 15px 30px; font-size: 18px; background: #6441a5; color: white; border: none; cursor: pointer; }
+        button:hover { background: #7d5bbe; }
+    </style>
+</head>
+<body>
+    <h2>🔐 Авторизация Twitch бота</h2>
+    <p>Нажмите кнопку ниже чтобы авторизовать бота на вашем канале</p>
+    <button onclick="authTwitch()">Войти через Twitch</button>
+    
+    <script>
+        function authTwitch() {
+            const clientId = 'YOUR_CLIENT_ID'; // ЗАМЕНИТЕ НА ВАШ CLIENT_ID
+            const redirectUri = 'https://YOUR_GITHUB_USERNAME.github.io/twitch-bot-auth/callback.html';
+            const scopes = [
+                'channel:read:redemptions',
+                'channel:manage:redemptions',
+                'chat:read',
+                'chat:edit', 
+                'channel:moderate',
+                'whispers:read',
+                'whispers:edit'
+            ].join('+');
+            
+            const authUrl = `https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}`;
+            window.location.href = authUrl;
+        }
+    </script>
+</body>
+</html>
