@@ -1,4 +1,5 @@
-exports.handler = async (event, context) => {
+// get-token.js
+exports.handler = async function(event, context) {
   console.log('get-token function called');
   
   const headers = {
@@ -7,22 +8,36 @@ exports.handler = async (event, context) => {
     'Access-Control-Allow-Methods': 'GET, OPTIONS'
   };
 
-  try {
-    // Всегда возвращаем успешный ответ
+  // Handle preflight
+  if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({
-        success: true,
-        message: "Function is working!",
-        token: "test_token_from_netlify",
-        timestamp: new Date().toISOString()
-      })
+      body: ''
+    };
+  }
+
+  try {
+    // Всегда возвращаем успешный ответ
+    const response = {
+      success: true,
+      message: "Get-token function is working!",
+      token: "test_token_from_netlify_123",
+      timestamp: new Date().toISOString(),
+      tokens_count: 1
+    };
+    
+    console.log('Returning:', response);
+    
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify(response)
     };
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in get-token:', error);
     return {
-      statusCode: 200, // Всегда 200 чтобы не ломать бота
+      statusCode: 200,
       headers,
       body: JSON.stringify({
         success: false,
