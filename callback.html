@@ -1,48 +1,23 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Token Received</title>
-    <style>
-        body { font-family: Arial; text-align: center; margin-top: 50px; }
-        .success { color: green; font-size: 24px; }
-        .error { color: red; }
-    </style>
-</head>
-<body>
-    <div id="message">
-        <p>Обработка авторизации...</p>
-    </div>
-
-    <script>
-        // Извлекаем токен из URL
-        const hash = window.location.hash.substring(1);
-        const params = new URLSearchParams(hash);
-        const token = params.get('access_token');
-        
-        if (token) {
-            document.getElementById('message').innerHTML = `
-                <div class="success">✅ Авторизация успешна!</div>
-                <p>Токен получен. Можно закрыть эту страницу.</p>
-                <p><small>Токен начинается с: ${token.substring(0, 15)}...</small></p>
-            `;
-            
-            // Отправляем токен вашему боту
-            fetch('https://your-bot-server.com/save-token', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({token: token})
-            }).then(() => {
-                console.log('Токен отправлен боту');
-            }).catch(err => {
-                console.log('Бот недоступен, но токен:', token);
-            });
-            
-        } else {
-            document.getElementById('message').innerHTML = `
-                <div class="error">❌ Ошибка авторизации</div>
-                <p>Токен не получен. Попробуйте снова.</p>
-            `;
-        }
-    </script>
-</body>
-</html>
+<script>
+if (token) {
+    // Отправляем токен на Netlify Function
+    fetch('/.netlify/functions/save-token', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ token: token })
+    }).then(response => response.json())
+      .then(data => {
+          document.getElementById('message').innerHTML = `
+              <div class="success">✅ Авторизация успешна!</div>
+              <p>Токен сохранен в боте. Можно закрыть страницу.</p>
+              <p><small>Токен: ${token.substring(0, 15)}...</small></p>
+          `;
+      })
+      .catch(error => {
+          document.getElementById('message').innerHTML = `
+              <div class="error">⚠️ Токен получен, но не сохранен</div>
+              <p>Скопируйте вручную: ${token}</p>
+          `;
+      });
+}
+</script>
