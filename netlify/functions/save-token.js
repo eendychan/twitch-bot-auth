@@ -1,4 +1,5 @@
-exports.handler = async (event, context) => {
+// save-token.js
+exports.handler = async function(event, context) {
   console.log('save-token function called');
   
   const headers = {
@@ -9,7 +10,11 @@ exports.handler = async (event, context) => {
 
   // Handle preflight
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+    return {
+      statusCode: 200,
+      headers,
+      body: ''
+    };
   }
 
   try {
@@ -18,20 +23,25 @@ exports.handler = async (event, context) => {
       body = JSON.parse(event.body);
     }
     
-    console.log('Received token:', body.token ? body.token.substring(0, 10) + '...' : 'none');
+    console.log('Received body:', body);
+    
+    const response = {
+      success: true,
+      message: "Token received successfully",
+      received_token: body.token ? true : false,
+      token_preview: body.token ? body.token.substring(0, 10) + '...' : null,
+      timestamp: new Date().toISOString()
+    };
+    
+    console.log('Returning:', response);
     
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({
-        success: true,
-        message: "Token received successfully",
-        received_token: body.token ? true : false,
-        timestamp: new Date().toISOString()
-      })
+      body: JSON.stringify(response)
     };
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in save-token:', error);
     return {
       statusCode: 200,
       headers,
