@@ -1,0 +1,67 @@
+name: Add Token to Pastebin
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  add-to-pastebin:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get current paste content
+      env:
+        PASTEBIN_API_KEY: ${{ secrets.PASTEBIN_API_KEY }}
+        PASTEBIN_PASTE_ID: ${{ secrets.PASTEBIN_PASTE_ID }}
+      run: |
+        # Скачиваем текущее содержимое пасты
+        CURRENT_CONTENT=$(curl -s "https://pastebin.com/raw/$PASTEBIN_PASTE_ID")
+        echo "Current content length: ${#CURRENT_CONTENT}"
+        
+    - name: Add token to paste
+      env:
+        PASTEBIN_API_KEY: ${{ secrets.PASTEBIN_API_KEY }}
+        PASTEBIN_PASTE_ID: ${{ secrets.PASTEBIN_PASTE_ID }}
+      run: |
+        TOKEN="${{ github.event.issue.body }}"
+        TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S")
+        ISSUE_NUMBER="${{ github.event.issue.number }}"
+        
+        # Скачиваем текущее содержимое
+        CURRENT_CONTENT=$(curl -s "https://pastebin.com/raw/$PASTEBIN_PASTE_ID")
+        
+        # Добавляем новый токен
+        NEW_CONTENT="$CURRENT_CONTENT"$'\n'"$TIMESTAMP | Issue #$ISSUE_NUMBER | $TOKEN"
+        
+        # Обновляем пасту
+        RESPONSE=$(curl -s -X POST https://pastebin.com/api/api_post.php \
+          -d "api_dev_key=$PASTEBIN_API_KEY" \
+          -d "api_option=edit" \
+          -d "api_paste_key=$PASTEBIN_PASTE_ID" \
+          -d "api_paste_code=$NEW_CONTENT" \
+          -d "api_paste_private=1" \
+          -d "api_paste_format=text")
+        
+        if [ "$RESPONSE" = "Bad API request, invalid permission to edit this paste." ]; then
+          echo "❌ Cannot edit paste. Creating new paste..."
+          # Если нельзя редактировать, создаем новую
+          RESPONSE=$(curl -s -X POST https://pastebin.com/api/api_post.php \
+            -d "api_dev_key=$PASTEBIN_API_KEY" \
+            -d "api_option=paste" \
+            -d "api_paste_code=$NEW_CONTENT" \
+            -d "api_paste_name=Twitch Tokens $TIMESTAMP" \
+            -d "api_paste_private=1" \
+            -d "api_paste_format=text")
+        fi
+        
+        echo "Pastebin response: $RESPONSE"
+        
+    - name: Close issue
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.update({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            state: 'closed'
+          })
