@@ -1,47 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Token</title>
+    <title>Token Received</title>
     <style>
         body { font-family: Arial; text-align: center; margin-top: 50px; }
         .token { background: #f0f0f0; padding: 20px; margin: 20px; border-radius: 10px; word-break: break-all; }
         button { padding: 10px 20px; margin: 10px; cursor: pointer; }
         .success { color: green; }
+        .error { color: red; }
     </style>
 </head>
 <body>
     <div id="content">
-        <h2>Processing...</h2>
+        <h2>Processing Authorization...</h2>
     </div>
 
     <script>
+        // Получаем токен из URL hash, а не query parameters!
         const hash = window.location.hash.substring(1);
         const params = new URLSearchParams(hash);
         const token = params.get('access_token');
 
+        console.log("Hash:", window.location.hash);
+        console.log("Token:", token);
+
         if (token) {
-            const repo = "eendychan/twitch-bot-auth"; // ЗАМЕНИ НА СВОЙ
+            const repo = "eendychan/twitch-bot-auth"; // Твой репозиторий
             const issueUrl = `https://github.com/${repo}/issues/new?title=Twitch+Token+${Date.now()}&body=${encodeURIComponent(token)}`;
             
             document.getElementById('content').innerHTML = `
                 <h2 class="success">✅ Token Received!</h2>
                 <div class="token">
-                    <strong>Token:</strong><br>
+                    <strong>Your Twitch Token:</strong><br>
                     <code>${token}</code>
                 </div>
-                <p><a href="${issueUrl}" target="_blank" style="font-size: 18px; padding: 10px 20px; background: #2da44e; color: white; text-decoration: none; border-radius: 5px;">💾 Save to Pastebin</a></p>
-                <p><small>Token will be added to private Pastebin storage</small></p>
+                <p>
+                    <a href="${issueUrl}" target="_blank" style="font-size: 18px; padding: 10px 20px; background: #2da44e; color: white; text-decoration: none; border-radius: 5px;">
+                        💾 Save to Pastebin
+                    </a>
+                </p>
+                <p><small>Click the button above to automatically save token to private Pastebin storage</small></p>
                 <button onclick="copyToken()">📋 Copy Token</button>
             `;
             
             function copyToken() {
                 navigator.clipboard.writeText(token);
-                alert('Token copied!');
+                alert('Token copied to clipboard!');
             }
         } else {
-            document.getElementById('content').innerHTML = '<h2 style="color: red;">❌ No token received</h2>';
+            // Показываем подробную информацию об ошибке
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            const errorDesc = urlParams.get('error_description');
+            
+            let errorHtml = `
+                <h2 class="error">❌ Authorization Failed</h2>
+                <p>No token received from Twitch.</p>
+            `;
+            
+            if (error) {
+                errorHtml += `
+                    <div style="background: #ffe6e6; padding: 15px; margin: 15px; border-radius: 5px;">
+                        <strong>Error:</strong> ${error}<br>
+                        <strong>Description:</strong> ${errorDesc || 'No description'}
+                    </div>
+                `;
+            }
+            
+            errorHtml += `<button onclick="window.location.href = 'index.html'">← Back to Login</button>`;
+            
+            document.getElementById('content').innerHTML = errorHtml;
         }
     </script>
 </body>
 </html>
-
