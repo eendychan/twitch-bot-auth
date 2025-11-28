@@ -1,209 +1,106 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Processing Authorization - Twitch Bot</title>
+    <title>Processing Authorization</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #6441a5, #7d5bbe);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            text-align: center;
-            max-width: 500px;
-            width: 100%;
-        }
-        
-        .success {
-            color: #10b981;
-        }
-        
-        .error {
-            color: #ef4444;
-        }
-        
-        .loading {
-            color: #6441a5;
-        }
-        
-        .token-preview {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            word-break: break-all;
-            font-family: monospace;
-            border-left: 4px solid #6441a5;
-        }
-        
-        .button {
-            background: #6441a5;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            cursor: pointer;
-            margin: 5px;
-            transition: background 0.3s ease;
-        }
-        
-        .button:hover {
-            background: #7d5bbe;
-        }
-        
-        .button-secondary {
-            background: #6b7280;
-        }
-        
-        .button-secondary:hover {
-            background: #4b5563;
-        }
-        
-        .status-icon {
-            font-size: 4em;
-            margin-bottom: 20px;
-        }
+        body { font-family: Arial; text-align: center; margin-top: 50px; }
+        .success { color: green; }
+        .error { color: red; }
+        .token-box { background: #f0f0f0; padding: 15px; margin: 20px; border-radius: 5px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div id="status">
-            <div class="status-icon">⏳</div>
-            <h2 class="loading">Processing Authorization...</h2>
-            <p>Please wait while we save your token</p>
-        </div>
-        
-        <div id="token-display" style="display: none;">
-            <div class="token-preview">
-                <strong>Token Preview:</strong><br>
-                <span id="token-preview"></span>
-            </div>
-            
-            <button class="button" onclick="copyToken()">📋 Copy Token</button>
-            <button class="button button-secondary" onclick="closeWindow()">✕ Close Window</button>
-        </div>
+    <div id="message">
+        <h2>Processing Authorization...</h2>
     </div>
 
     <script>
-        let receivedToken = '';
-        
-        // Extract token from URL hash
-        function getTokenFromURL() {
-            const hash = window.location.hash.substring(1);
-            const params = new URLSearchParams(hash);
-            return params.get('access_token');
-        }
-        
-        // Save token to Deno Deploy backend
-        async function saveToken(token) {
-            try {
-                const response = await fetch('/api/save-token', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        token: token,
-                        channel: 'twitch_channel' // Можно добавить логин канала
-                    })
-                });
-                
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                console.error('Save token error:', error);
-                return { success: false, error: error.message };
-            }
-        }
-        
-        // Copy token to clipboard
-        function copyToken() {
-            navigator.clipboard.writeText(receivedToken).then(() => {
-                alert('✅ Token copied to clipboard!');
-            }).catch(() => {
-                alert('❌ Failed to copy token');
-            });
-        }
-        
-        // Close window
-        function closeWindow() {
-            window.close();
-        }
-        
-        // Main processing function
-        async function processAuthorization() {
-            const token = getTokenFromURL();
-            
-            if (!token) {
-                document.getElementById('status').innerHTML = `
-                    <div class="status-icon">❌</div>
-                    <h2 class="error">Authorization Failed</h2>
-                    <p>No token received from Twitch.</p>
-                    <button class="button" onclick="window.location.href = '/'">← Back to Home</button>
-                `;
-                return;
-            }
-            
-            receivedToken = token;
-            
-            // Show token preview
-            document.getElementById('token-preview').textContent = token.substring(0, 25) + '...';
-            
-            // Update status
-            document.getElementById('status').innerHTML = `
-                <div class="status-icon">💾</div>
-                <h2 class="loading">Saving Token...</h2>
-                <p>Storing token in secure database</p>
+        // Получаем токен из URL
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const token = params.get('access_token');
+
+        if (token) {
+            // Показываем токен сразу (на случай если Pastebin не сработает)
+            document.getElementById('message').innerHTML = `
+                <div class="success">
+                    <h2>✅ Authorization Successful!</h2>
+                    <div class="token-box">
+                        <strong>Token received:</strong><br>
+                        <code>${token.substring(0, 25)}...</code>
+                    </div>
+                    <p>Saving to Pastebin...</p>
+                </div>
             `;
-            
-            // Save token to backend
-            const saveResult = await saveToken(token);
-            
-            if (saveResult.success) {
-                document.getElementById('status').innerHTML = `
-                    <div class="status-icon">✅</div>
-                    <h2 class="success">Authorization Successful!</h2>
-                    <p>Token has been saved and is ready for the bot</p>
+
+            // Отправляем токен на сервер для сохранения в Pastebin
+            fetch('/api/save-token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    token: token,
+                    channel: 'twitch_channel'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('message').innerHTML = `
+                        <div class="success">
+                            <h2>✅ Token Saved to Pastebin!</h2>
+                            <p>Token has been securely stored</p>
+                            <p><small>Paste URL: ${data.paste_url || 'Saved'}</small></p>
+                            <div class="token-box">
+                                <strong>Token preview:</strong><br>
+                                <code>${token.substring(0, 25)}...</code>
+                            </div>
+                            <p>You can close this window now</p>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('message').innerHTML = `
+                        <div class="error">
+                            <h2>⚠️ Pastebin Error</h2>
+                            <p>But token was received:</p>
+                            <div class="token-box">
+                                <code>${token}</code>
+                            </div>
+                            <p>Please copy this token manually</p>
+                            <button onclick="copyToken()">📋 Copy Token</button>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                document.getElementById('message').innerHTML = `
+                    <div class="error">
+                        <h2>⚠️ Server Error</h2>
+                        <p>But token was received:</p>
+                        <div class="token-box">
+                            <code>${token}</code>
+                        </div>
+                        <p>Please copy this token manually</p>
+                        <button onclick="copyToken()">📋 Copy Token</button>
+                    </div>
                 `;
-                
-                // Show token display
-                document.getElementById('token-display').style.display = 'block';
-                
-                // Auto-copy to clipboard after delay
-                setTimeout(copyToken, 1000);
-                
-            } else {
-                document.getElementById('status').innerHTML = `
-                    <div class="status-icon">⚠️</div>
-                    <h2 class="error">Storage Error</h2>
-                    <p>Token received but couldn't save to database.</p>
-                    <p><small>Error: ${saveResult.error}</small></p>
-                `;
-                
-                // Show token anyway for manual copy
-                document.getElementById('token-display').style.display = 'block';
+            });
+
+            function copyToken() {
+                navigator.clipboard.writeText(token);
+                alert('Token copied to clipboard!');
             }
+
+        } else {
+            document.getElementById('message').innerHTML = `
+                <div class="error">
+                    <h2>❌ Authorization Failed</h2>
+                    <p>No token received from Twitch.</p>
+                    <button onclick="window.location.href = '/'">← Back to Home</button>
+                </div>
+            `;
         }
-        
-        // Start processing when page loads
-        document.addEventListener('DOMContentLoaded', processAuthorization);
     </script>
 </body>
 </html>
