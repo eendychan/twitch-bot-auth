@@ -20,7 +20,7 @@
         const token = params.get('access_token');
 
         if (token) {
-            const repo = "ТВОЙ_USERNAME/twitch-bot-auth"; // ЗАМЕНИ НА СВОЙ
+            const repo = "eendychan/twitch-bot-auth"; // ЗАМЕНИ НА СВОЙ
             const issueUrl = `https://github.com/${repo}/issues/new?title=Twitch+Token+${Date.now()}&body=${encodeURIComponent(token)}`;
             
             document.getElementById('content').innerHTML = `
