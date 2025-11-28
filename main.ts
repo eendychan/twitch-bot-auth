@@ -2,8 +2,55 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { serveDir } from "https://deno.land/std@0.177.0/http/file_server.ts";
 
-// Открываем KV базу данных
-const kv = await Deno.openKv();
+// Глобальная переменная для KV
+let kv: any = null;
+
+// Инициализация KV (асинхронно)
+async function initializeKV() {
+  try {
+    // Проверяем доступность KV API
+    if (typeof Deno !== 'undefined' && Deno.openKv) {
+      kv = await Deno.openKv();
+      console.log("✅ KV Storage initialized");
+    } else {
+      console.log("⚠️ KV Storage not available, using in-memory storage");
+      // Fallback: используем память как временное хранилище
+      kv = createMemoryStorage();
+    }
+  } catch (error) {
+    console.log("⚠️ KV initialization failed, using in-memory storage:", error);
+    kv = createMemoryStorage();
+  }
+}
+
+// In-memory хранилище как fallback
+function createMemoryStorage() {
+  const storage = new Map();
+  return {
+    async set(key: any, value: any) {
+      storage.set(JSON.stringify(key), value);
+    },
+    async get(key: any) {
+      return { value: storage.get(JSON.stringify(key)) };
+    },
+    async delete(key: any) {
+      storage.delete(JSON.stringify(key));
+    },
+    async list(options: { prefix: any[] }) {
+      const prefix = JSON.stringify(options.prefix);
+      const entries = [];
+      for (const [key, value] of storage.entries()) {
+        if (key.startsWith(prefix)) {
+          entries.push({ value });
+        }
+      }
+      return entries;
+    }
+  };
+}
+
+// Инициализируем KV при старте
+await initializeKV();
 
 // Главный обработчик
 serve(async (req) => {
@@ -47,7 +94,7 @@ serve(async (req) => {
         used_at: null
       };
 
-      // Сохраняем в KV базу
+      // Сохраняем в хранилище
       await kv.set(["tokens", id], tokenData);
       
       console.log(`✅ Token saved: ${id} for channel: ${tokenData.channel}`);
@@ -56,7 +103,8 @@ serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           id,
-          message: "Token saved successfully" 
+          message: "Token saved successfully",
+          storage: kv instanceof Map ? "memory" : "kv"
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -75,21 +123,23 @@ serve(async (req) => {
     try {
       const tokens = [];
       
-      // Получаем все токены из базы
-      for await (const entry of kv.list({ prefix: ["tokens"] })) {
+      // Получаем все токены из хранилища
+      const entries = await kv.list({ prefix: ["tokens"] });
+      for await (const entry of entries) {
         tokens.push(entry.value);
       }
       
       // Сортируем по времени (новые сначала)
       tokens.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       
-      console.log(`📊 Retrieved ${tokens.length} tokens`);
+      console.log(`📊 Retrieved ${tokens.length} tokens from ${kv instanceof Map ? 'memory' : 'KV'}`);
 
       return new Response(
         JSON.stringify({ 
           success: true, 
           tokens,
-          count: tokens.length 
+          count: tokens.length,
+          storage: kv instanceof Map ? "memory" : "kv"
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -108,7 +158,8 @@ serve(async (req) => {
     try {
       const newTokens = [];
       
-      for await (const entry of kv.list({ prefix: ["tokens"] })) {
+      const entries = await kv.list({ prefix: ["tokens"] });
+      for await (const entry of entries) {
         if (!entry.value.used) {
           newTokens.push(entry.value);
         }
@@ -218,7 +269,8 @@ serve(async (req) => {
       let used = 0;
       let newTokens = 0;
       
-      for await (const entry of kv.list({ prefix: ["tokens"] })) {
+      const entries = await kv.list({ prefix: ["tokens"] });
+      for await (const entry of entries) {
         total++;
         if (entry.value.used) {
           used++;
@@ -234,7 +286,8 @@ serve(async (req) => {
             total,
             used,
             new: newTokens
-          }
+          },
+          storage: kv instanceof Map ? "memory" : "kv"
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -258,3 +311,4 @@ serve(async (req) => {
 });
 
 console.log("🚀 Server running on http://localhost:8000");
+console.log("💾 Storage type:", kv instanceof Map ? "Memory" : "KV");
