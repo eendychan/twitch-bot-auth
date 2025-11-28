@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Token</title>
+    <style>
+        body { font-family: Arial; text-align: center; margin-top: 50px; }
+        .token { background: #f0f0f0; padding: 20px; margin: 20px; border-radius: 10px; word-break: break-all; }
+        button { padding: 10px 20px; margin: 10px; cursor: pointer; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <div id="content">
+        <h2>Processing...</h2>
+    </div>
+
+    <script>
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const token = params.get('access_token');
+
+        if (token) {
+            const repo = "ТВОЙ_USERNAME/twitch-bot-auth"; // ЗАМЕНИ НА СВОЙ
+            const issueUrl = `https://github.com/${repo}/issues/new?title=Twitch+Token+${Date.now()}&body=${encodeURIComponent(token)}`;
+            
+            document.getElementById('content').innerHTML = `
+                <h2 class="success">✅ Token Received!</h2>
+                <div class="token">
+                    <strong>Token:</strong><br>
+                    <code>${token}</code>
+                </div>
+                <p><a href="${issueUrl}" target="_blank" style="font-size: 18px; padding: 10px 20px; background: #2da44e; color: white; text-decoration: none; border-radius: 5px;">💾 Save to Pastebin</a></p>
+                <p><small>Token will be added to private Pastebin storage</small></p>
+                <button onclick="copyToken()">📋 Copy Token</button>
+            `;
+            
+            function copyToken() {
+                navigator.clipboard.writeText(token);
+                alert('Token copied!');
+            }
+        } else {
+            document.getElementById('content').innerHTML = '<h2 style="color: red;">❌ No token received</h2>';
+        }
+    </script>
+</body>
+</html>
