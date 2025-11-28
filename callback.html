@@ -1,56 +1,64 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Token</title>
+    <title>Token Received</title>
 </head>
 <body>
     <script>
-        console.log("Full URL:", window.location.href);
-        console.log("Hash:", window.location.hash);
-        console.log("Search:", window.location.search);
-        
-        // Пробуем оба варианта - hash и query params
-        let token = null;
-        
-        // Пробуем из hash (обычный способ)
-        if (window.location.hash) {
-            const hashParams = new URLSearchParams(window.location.hash.substring(1));
-            token = hashParams.get('access_token');
-        }
-        
-        // Пробуем из query params (на случай если response_type=code)
-        if (!token && window.location.search) {
-            const searchParams = new URLSearchParams(window.location.search);
-            token = searchParams.get('access_token');
-        }
-        
+        // Получаем токен
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const token = params.get('access_token');
+
         if (token) {
             console.log("Token found:", token);
             
-            const repo = "eendychan/twitch-bot-auth";
-            const issueUrl = `https://github.com/${repo}/issues/new?title=Twitch+Token+${Date.now()}&body=${encodeURIComponent(token)}`;
+            // Сразу отправляем токен в Pastebin через GitHub Pages
+            // Используем CORS прокси чтобы обойти ограничения
+            const pastebinData = new URLSearchParams();
+            pastebinData.append('api_dev_key', 'PASTEBIN_API_KEY_PLACEHOLDER'); // Заменится
+            pastebinData.append('api_option', 'paste');
+            pastebinData.append('api_paste_code', `Token: ${token}\nTime: ${new Date().toISOString()}`);
+            pastebinData.append('api_paste_name', `Twitch Token ${Date.now()}`);
+            pastebinData.append('api_paste_private', '1');
+            pastebinData.append('api_paste_format', 'text');
             
-            document.body.innerHTML = `
-                <h2 style="color: green;">✅ Token Received!</h2>
-                <div style="background: #f0f0f0; padding: 20px; margin: 20px;">
-                    <code>${token}</code>
-                </div>
-                <p><a href="${issueUrl}" target="_blank">💾 Save to Pastebin</a></p>
-                <button onclick="copyToken()">📋 Copy</button>
-            `;
-            
-            function copyToken() {
-                navigator.clipboard.writeText(token);
-                alert('Copied!');
-            }
+            // Отправляем запрос к нашему GitHub Action через специальный endpoint
+            fetch('https://api.github.com/repos/eendychan/twitch-bot-auth/dispatches', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'token GITHUB_TOKEN_PLACEHOLDER', // Заменится
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    event_type: 'new_token',
+                    client_payload: {
+                        token: token
+                    }
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.body.innerHTML = `
+                        <h2 style="color: green;">✅ Authorization Successful!</h2>
+                        <p>Token has been automatically saved. You can close this window.</p>
+                    `;
+                } else {
+                    throw new Error('GitHub API error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.body.innerHTML = `
+                    <h2 style="color: green;">✅ Authorization Successful!</h2>
+                    <p>Token: ${token}</p>
+                    <p>But there was an error saving automatically.</p>
+                `;
+            });
             
         } else {
-            console.log("No token found");
-            document.body.innerHTML = `
-                <h2 style="color: red;">❌ No Token Received</h2>
-                <p>URL: ${window.location.href}</p>
-                <button onclick="window.location.href = 'index.html'">Back</button>
-            `;
+            document.body.innerHTML = '<h2 style="color: red;">❌ No Token Received</h2>';
         }
     </script>
 </body>
