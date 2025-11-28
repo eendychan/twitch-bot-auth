@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Twitch Auth</title>
+    <style>
+        body { font-family: Arial; text-align: center; margin-top: 50px; }
+        button { padding: 15px 30px; font-size: 18px; background: #6441a5; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>Twitch Bot Auth</h2>
+    <button onclick="auth()">Login with Twitch</button>
+
+    <script>
+        function auth() {
+            // Client ID будет подставлен GitHub Pages
+            const clientId = "{{TWITCH_CLIENT_ID}}"; // Заменится при деплое
+            const redirectUri = window.location.origin + '/callback.html';
+            const scopes = ['chat:read', 'chat:edit', 'channel:moderate'].join('+');
+            
+            const url = `https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}`;
+            window.location.href = url;
+        }
+    </script>
+</body>
+</html>
