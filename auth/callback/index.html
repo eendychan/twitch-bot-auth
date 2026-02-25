@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Twitch PKCE Authorization</title>
+<title>Twitch One-Time Auth</title>
 <style>
 body { font-family: Arial; text-align: center; margin-top: 80px; }
 button { padding: 15px 30px; font-size: 16px; cursor: pointer; }
@@ -11,14 +11,15 @@ pre { background: #111; color: #0f0; padding: 15px; margin-top: 20px; overflow-x
 </head>
 <body>
 
-<h1>Twitch PKCE Authorization</h1>
+<h1>Twitch One-Time Authorization</h1>
 <button onclick="login()">Login with Twitch</button>
 
 <pre id="output"></pre>
 
 <script>
-const CLIENT_ID = "lcbtjkblttbh70ubk0h1zrz9f2ka8i"; // Вставь свой client_id
-const REDIRECT_URI = "https://eendychan.github.io/twitch-bot-auth/auth/callback"; // твой redirect URL
+const CLIENT_ID = "lcbtjkblttbh70ubk0h1zrz9f2ka8i";       // вставь свой client_id
+const CLIENT_SECRET = "rowzl9cgwicpxna49iybss78co2lcy"; // вставь свой client_secret
+const REDIRECT_URI = "https://eendychan.github.io/twitch-bot-auth/auth/callback"; // твой redirect URI
 const SCOPES = [
   "chat:read",
   "chat:edit",
@@ -31,70 +32,39 @@ const SCOPES = [
   "moderator:manage:automod"
 ].join(" ");
 
-// Генерация случайного кодового верификатора
-function generateCodeVerifier(length = 128) {
-  const array = new Uint8Array(length);
-  window.crypto.getRandomValues(array);
-  return btoa(String.fromCharCode(...array))
-      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
-
-// SHA256 и Base64 URL Encode
-async function sha256(baseString) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(baseString);
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  const bytes = new Uint8Array(hash);
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
-
-async function login() {
-  const codeVerifier = generateCodeVerifier();
-  localStorage.setItem("code_verifier", codeVerifier);
-  const codeChallenge = await sha256(codeVerifier);
-
-  const authUrl =
-    "https://id.twitch.tv/oauth2/authorize" +
-    "?response_type=code" +
-    "&client_id=" + CLIENT_ID +
-    "&redirect_uri=" + encodeURIComponent(REDIRECT_URI) +
-    "&scope=" + encodeURIComponent(SCOPES) +
-    "&code_challenge_method=S256" +
-    "&code_challenge=" + codeChallenge;
-
-  window.location.href = authUrl;
+// Перейти на авторизацию Twitch
+function login() {
+    const url = `https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(SCOPES)}`;
+    window.location.href = url;
 }
 
 // После редиректа Twitch
 async function handleRedirect() {
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get("code");
-  if (!code) return;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (!code) return;
 
-  document.getElementById("output").innerText = "Authorization code received...\nExchanging for token...";
+    document.getElementById("output").innerText = "Authorization code received...\nExchanging for token...";
 
-  const codeVerifier = localStorage.getItem("code_verifier");
-
-  const body = new URLSearchParams({
-    client_id: CLIENT_ID,
-    grant_type: "authorization_code",
-    code: code,
-    redirect_uri: REDIRECT_URI,
-    code_verifier: codeVerifier
-  });
-
-  try {
-    const res = await fetch("https://id.twitch.tv/oauth2/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body
+    const body = new URLSearchParams({
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        code: code,
+        grant_type: "authorization_code",
+        redirect_uri: REDIRECT_URI
     });
-    const data = await res.json();
-    document.getElementById("output").innerText = JSON.stringify(data, null, 2);
-  } catch (err) {
-    document.getElementById("output").innerText = "Error: " + err;
-  }
+
+    try {
+        const res = await fetch("https://id.twitch.tv/oauth2/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body
+        });
+        const data = await res.json();
+        document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+    } catch (err) {
+        document.getElementById("output").innerText = "Error: " + err;
+    }
 }
 
 handleRedirect();
