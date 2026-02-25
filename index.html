@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Twitch OAuth PKCE</title>
+<title>Twitch PKCE Authorization</title>
 <style>
 body { font-family: Arial; text-align: center; margin-top: 80px; }
 button { padding: 15px 30px; font-size: 16px; cursor: pointer; }
@@ -17,8 +17,8 @@ pre { background: #111; color: #0f0; padding: 15px; margin-top: 20px; overflow-x
 <pre id="output"></pre>
 
 <script>
-const CLIENT_ID = "lcbtjkblttbh70ubk0h1zrz9f2ka8i"; // вставь свой client_id
-const REDIRECT_URI = window.location.origin + window.location.pathname;
+const CLIENT_ID = "lcbtjkblttbh70ubk0h1zrz9f2ka8i"; // Вставь свой client_id
+const REDIRECT_URI = "https://eendychan.github.io/twitch-bot-auth/auth/callback"; // твой redirect URL
 const SCOPES = [
   "chat:read",
   "chat:edit",
@@ -31,7 +31,7 @@ const SCOPES = [
   "moderator:manage:automod"
 ].join(" ");
 
-// 🛠️ Генерация случайного кодового верификатора
+// Генерация случайного кодового верификатора
 function generateCodeVerifier(length = 128) {
   const array = new Uint8Array(length);
   window.crypto.getRandomValues(array);
@@ -66,7 +66,7 @@ async function login() {
   window.location.href = authUrl;
 }
 
-// После редиректа
+// После редиректа Twitch
 async function handleRedirect() {
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
@@ -84,14 +84,17 @@ async function handleRedirect() {
     code_verifier: codeVerifier
   });
 
-  const res = await fetch("https://id.twitch.tv/oauth2/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body
-  });
-
-  const data = await res.json();
-  document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+  try {
+    const res = await fetch("https://id.twitch.tv/oauth2/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body
+    });
+    const data = await res.json();
+    document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+  } catch (err) {
+    document.getElementById("output").innerText = "Error: " + err;
+  }
 }
 
 handleRedirect();
